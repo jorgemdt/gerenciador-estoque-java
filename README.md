@@ -1,6 +1,5 @@
-## Getting Started
-
-Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
+# Proj-extensao-poo
+Projeto de extensão da matéria POO em Java - 2024.1
 
 ## Folder Structure
 
