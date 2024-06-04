@@ -83,7 +83,7 @@ public class App {
 
         gbc.gridx = 2;
         gbc.anchor = GridBagConstraints.LINE_END;
-        inputPanel.add(new JLabel("Quantidade"), gbc);
+        inputPanel.add(new JLabel("Quantidade Atual"), gbc);
 
         gbc.gridx = 3;
         gbc.anchor = GridBagConstraints.LINE_START;
