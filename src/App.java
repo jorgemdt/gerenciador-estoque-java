@@ -1,38 +1,22 @@
-import java.util.ArrayList;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.event.MouseInputAdapter;
-import javax.swing.table.DefaultTableModel;
-import java.sql.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.*;
+import java.util.ArrayList;
+import javax.swing.*;
+import javax.swing.event.MouseInputAdapter;
+import javax.swing.table.DefaultTableModel;
 
 public class App {
-    JTextField jtf_amount, jtf_name, jtf_brand, jtf_type, jtf_size,  jtf_color,  jtf_price;
+    JTextField jtf_amount, jtf_min_amount, jtf_name, jtf_brand, jtf_type, jtf_size, jtf_color, jtf_price;
     JTextArea jta_desc;
-    JButton jb_add, jb_delete, jb_update, jb_search;
+    JButton jb_add, jb_delete, jb_update, jb_search, jb_check;
     JTable jt;
     JFrame frame;
-    JLabel lbl_name, lbl_price, lbl_desc, lbl_brand, lbl_type, lbl_size, lbl_color , lbl_amount;
     ArrayList<Product> productlist;
     Product product;
-    String header[] = new String[] {
-            "id",
-            "Nome",
-            "Marca",
-            "Quantidade",
-            "Tipo",
-            "Tamanho",
-            "Cor",
-            "Descrição",
-            "Preço",
-
+    String header[] = new String[]{
+            "id", "Nome", "Marca", "Quantidade", "Quantidade Mínima", "Tipo", "Tamanho", "Cor", "Descrição", "Preço"
     };
     DefaultTableModel dtm = new DefaultTableModel(0, 0) {
         @Override
@@ -40,6 +24,29 @@ public class App {
             return false;
         }
     };
+
+    private void checkMinimumQuantity() {
+        ArrayList<Product> lowStockProducts = new ArrayList<>();
+        for (Product product : productlist) {
+            if (product.getAmount() < product.getMinAmount()) {
+                lowStockProducts.add(product);
+            }
+        }
+    
+        if (!lowStockProducts.isEmpty()) {
+            StringBuilder message = new StringBuilder();
+            message.append("Os seguintes produtos estão com quantidade abaixo do mínimo:\n\n");
+            for (Product product : lowStockProducts) {
+                message.append("ID: ").append(product.getId()).append("\n");
+                message.append("Nome: ").append(product.getName()).append("\n");
+                message.append("Quantidade Atual: ").append(product.getAmount()).append("\n");
+                message.append("Quantidade Mínima: ").append(product.getMinAmount()).append("\n\n");
+            }
+            JOptionPane.showMessageDialog(frame, message.toString(), "Produtos com Quantidade Baixa", JOptionPane.WARNING_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(frame, "Todos os produtos estão com quantidade acima do mínimo.", "Estoque OK", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
 
     static Connection conn;
     ResultSet rs;
@@ -52,124 +59,154 @@ public class App {
         app.mainInterface();
         app.checkTables();
         app.loadData();
+        app.checkMinimumQuantity();
+        
     }
 
-
     private void mainInterface() {
-        // Componentes da interface gráfica
-        frame = new JFrame();
-        lbl_name = new JLabel();
-        lbl_name.setText("Nome");
-        lbl_name.setBounds(10, 10, 100, 50);
-        frame.add(lbl_name);
+        frame = new JFrame("Gerenciamento de Estoque ");
 
-        jtf_name = new JTextField();
-        jtf_name.setBounds(100, 25, 250, 25);
-        frame.add(jtf_name);
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
 
-        lbl_amount = new JLabel();
-        lbl_amount.setText("Quantidade");
-        lbl_amount.setBounds(500, 45, 100, 50);
-        frame.add(lbl_amount);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.LINE_END;
+        inputPanel.add(new JLabel("Nome"), gbc);
 
-        jtf_amount = new JTextField();
-        jtf_amount.setBounds(580, 60, 100, 25);
-        frame.add(jtf_amount);
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        jtf_name = new JTextField(20);
+        inputPanel.add(jtf_name, gbc);
 
-        lbl_price = new JLabel();
-        lbl_price.setText("Preço");
-        lbl_price.setBounds(10, 45, 100, 50);
-        frame.add(lbl_price);
+        gbc.gridx = 2;
+        gbc.anchor = GridBagConstraints.LINE_END;
+        inputPanel.add(new JLabel("Quantidade"), gbc);
 
-        jtf_price = new JTextField();
-        jtf_price.setBounds(100, 60, 100, 25);
-        frame.add(jtf_price);
+        gbc.gridx = 3;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        jtf_amount = new JTextField(5);
+        inputPanel.add(jtf_amount, gbc);
 
-        lbl_brand = new JLabel();
-        lbl_brand.setText("Marca");
-        lbl_brand.setBounds(10, 80, 100, 50);
-        frame.add(lbl_brand);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.anchor = GridBagConstraints.LINE_END;
+        inputPanel.add(new JLabel("Quantidade Mínima"), gbc);
 
-        jtf_brand = new JTextField();
-        jtf_brand.setBounds(100, 95, 250, 25);
-        frame.add(jtf_brand);
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        jtf_min_amount = new JTextField(5);
+        inputPanel.add(jtf_min_amount, gbc);
 
-        lbl_type = new JLabel();
-        lbl_type.setText("Tipo");
-        lbl_type.setBounds(10, 115, 100, 50);
-        frame.add(lbl_type);
+        gbc.gridx = 2;
+        gbc.anchor = GridBagConstraints.LINE_END;
+        inputPanel.add(new JLabel("Preço"), gbc);
 
-        jtf_type = new JTextField();
-        jtf_type.setBounds(100, 130, 250, 25);
-        frame.add(jtf_type);
+        gbc.gridx = 3;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        jtf_price = new JTextField(10);
+        inputPanel.add(jtf_price, gbc);
 
-        lbl_size = new JLabel();
-        lbl_size.setText("Tamanho");
-        lbl_size.setBounds(10, 150, 100, 50);
-        frame.add(lbl_size);
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.anchor = GridBagConstraints.LINE_END;
+        inputPanel.add(new JLabel("Marca"), gbc);
 
-        jtf_size = new JTextField();
-        jtf_size.setBounds(100, 165, 250, 25);
-        frame.add(jtf_size);
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        jtf_brand = new JTextField(20);
+        inputPanel.add(jtf_brand, gbc);
 
-        lbl_color = new JLabel();
-        lbl_color.setText("Cor");
-        lbl_color.setBounds(10, 185, 100, 50);
-        frame.add(lbl_color);
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.anchor = GridBagConstraints.LINE_END;
+        inputPanel.add(new JLabel("Tipo"), gbc);
 
-        jtf_color = new JTextField();
-        jtf_color.setBounds(100, 200, 250, 25);
-        frame.add(jtf_color);
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        jtf_type = new JTextField(20);
+        inputPanel.add(jtf_type, gbc);
 
-        lbl_desc = new JLabel();
-        lbl_desc.setText("Descrição");
-        lbl_desc.setBounds(10, 220, 100, 50);
-        frame.add(lbl_desc);
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.anchor = GridBagConstraints.LINE_END;
+        inputPanel.add(new JLabel("Tamanho"), gbc);
 
-        jta_desc = new JTextArea();
-        jta_desc.setBounds(100, 235, 250, 50);
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        jtf_size = new JTextField(20);
+        inputPanel.add(jtf_size, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.anchor = GridBagConstraints.LINE_END;
+        inputPanel.add(new JLabel("Cor"), gbc);
+
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        jtf_color = new JTextField(20);
+        inputPanel.add(jtf_color, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 6;
+        gbc.anchor = GridBagConstraints.LINE_END;
+        inputPanel.add(new JLabel("Descrição"), gbc);
+
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        gbc.gridwidth = 3;
+        jta_desc = new JTextArea(3, 20);
         jta_desc.setBorder(new JTextField().getBorder());
-        frame.add(jta_desc);
+        inputPanel.add(new JScrollPane(jta_desc), gbc);
 
-        jb_add = new JButton();
-        jb_add.setText("Adicionar");
-        jb_add.setBounds(10, 300, 100, 25);
-        frame.add(jb_add);
-        jb_add.addActionListener(addFoodListener);
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout());
 
-        jb_delete = new JButton();
-        jb_delete.setText("Deletar");
-        jb_delete.setBounds(120, 300, 100, 25);
-        frame.add(jb_delete);
-        jb_delete.addActionListener(delFoodListener);
+        jb_add = new JButton("Adicionar");
+        jb_add.addActionListener(addProductListener);
+        buttonPanel.add(jb_add);
 
-        jb_update = new JButton();
-        jb_update.setText("Atualizar");
-        jb_update.setBounds(230, 300, 100, 25);
-        frame.add(jb_update);
-        jb_update.addActionListener(updateFoodListener);
+        jb_delete = new JButton("Deletar");
+        jb_delete.addActionListener(delProductListener);
+        buttonPanel.add(jb_delete);
 
-        jb_search = new JButton();
-        jb_search.setText("Buscar");
-        jb_search.setBounds(340, 300, 100, 25);
-        frame.add(jb_search);
-        jb_search.addActionListener(searchFoodListener);
+        jb_update = new JButton("Atualizar");
+        jb_update.addActionListener(updateProductListener);
+        buttonPanel.add(jb_update);
+
+        jb_search = new JButton("Buscar");
+        jb_search.addActionListener(searchProductListener);
+        buttonPanel.add(jb_search);
+
+        jb_check = new JButton("Verificar Estoque");
+        jb_check.addActionListener(checkQuantityListener);
+        buttonPanel.add(jb_check);
+
 
         jt = new JTable();
         jt.setModel(dtm);
         dtm.setColumnIdentifiers(header);
         JScrollPane sp = new JScrollPane(jt);
-        sp.setBounds(10, 330, 800, 300);
-        frame.add(sp);
         jt.addMouseListener(mouseListener);
 
-        frame.setSize(840, 680);
-        frame.setLayout(null); // Não está usando gerenciadores de layout
-        frame.setVisible(true);
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BorderLayout());
+        mainPanel.add(inputPanel, BorderLayout.NORTH);
+        mainPanel.add(buttonPanel, BorderLayout.CENTER);
+        mainPanel.add(sp, BorderLayout.SOUTH);
 
+        JScrollPane scrollPane = new JScrollPane(mainPanel);
+        frame.add(scrollPane);
+
+        frame.setTitle("Gerenciamento de Estoque");
+        frame.setSize(840, 680);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
     }
 
-    ActionListener addFoodListener = new ActionListener() {
+    ActionListener addProductListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
             String name = jtf_name.getText().trim();
@@ -180,23 +217,23 @@ public class App {
             String size = jtf_size.getText().trim();
             String color = jtf_color.getText().trim();
             String amount = jtf_amount.getText().trim();
-        
-            // Verifica se algum campo obrigatório está vazio
-            if (name.isEmpty() || price.isEmpty() || desc.isEmpty() || brand.isEmpty() || type.isEmpty() || size.isEmpty() || color.isEmpty() || amount.isEmpty()) {
+            String min_amount = jtf_min_amount.getText().trim();
+
+            if (name.isEmpty() || price.isEmpty() || desc.isEmpty() || brand.isEmpty() || type.isEmpty() || size.isEmpty() || color.isEmpty() || amount.isEmpty() || min_amount.isEmpty()) {
                 JOptionPane.showMessageDialog(frame, "Por favor, preencha todas as informações");
                 return;
             }
-        
-            // Converte a quantidade para um número inteiro
+
             int amountValue;
+            int minAmountValue;
             try {
                 amountValue = Integer.parseInt(amount);
+                minAmountValue = Integer.parseInt(min_amount);
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(frame, "Quantidade deve ser um número inteiro válido");
+                JOptionPane.showMessageDialog(frame, "Quantidade e Quantidade Mínima devem ser números inteiros válidos");
                 return;
             }
-        
-            // Converte o preço para um número real
+
             double priceValue;
             try {
                 priceValue = Double.parseDouble(price);
@@ -204,8 +241,7 @@ public class App {
                 JOptionPane.showMessageDialog(frame, "Preço deve ser um número real válido");
                 return;
             }
-        
-            // Confirmação da inserção
+
             int result = JOptionPane.showConfirmDialog(frame, "Inserir os seguintes dados:\n" +
                     "Nome: " + name + "\n" +
                     "Preço: " + price + "\n" +
@@ -214,30 +250,37 @@ public class App {
                     "Tipo: " + type + "\n" +
                     "Tamanho: " + size + "\n" +
                     "Cor: " + color + "\n" +
-                    "Quantidade: " + amount + "\n", "Inserir", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                    "Quantidade: " + amount + "\n" +
+                    "Quantidade Mínima: " + min_amount + "\n", "Inserir", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (result == JOptionPane.YES_OPTION) {
                 try {
-                    // Insere os dados no banco de dados
                     Statement stmt = conn.createStatement();
-                    String sql = "INSERT INTO tbl_products (product_name, product_price, product_desc, product_brand, product_type, product_size, product_color, product_amount) " +
-                                 "VALUES ('" + name + "', '" + priceValue + "', '" + desc + "', '" + brand + "', '" + type + "', '" + size + "', '" + color + "', '" + amountValue + "')";
+                    String sql = "INSERT INTO tbl_products (product_name, product_price, product_desc, product_brand, product_type, product_size, product_color, product_amount, product_min_amount) VALUES ('" +
+                            name + "', '" +
+                            price + "', '" +
+                            desc + "', '" +
+                            brand + "', '" +
+                            type + "', '" +
+                            size + "', '" +
+                            color + "', '" +
+                            amount + "', '" +
+                            min_amount + "')";
                     stmt.executeUpdate(sql);
                     loadData();
-                    JOptionPane.showMessageDialog(frame, "Produto inserido com sucesso!");
+                    JOptionPane.showMessageDialog(frame, "Produto adicionado com sucesso!");
                 } catch (SQLException ex) {
-                    System.out.println("Erro ao inserir produto: " + ex.getMessage());
-                    JOptionPane.showMessageDialog(frame, "Erro ao inserir produto: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                    System.out.println("Erro ao adicionar produto: " + ex.getMessage());
+                    JOptionPane.showMessageDialog(frame, "Erro ao adicionar produto: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
                 }
             }
         }
-        
     };
 
-    private void checkTables() { // Cria e verifica a tabela
-        System.out.println("Check table");
+    private void checkTables() {
         String sql = "CREATE TABLE IF NOT EXISTS tbl_products (" +
                 "	id integer PRIMARY KEY AUTOINCREMENT," +
                 "	product_amount integer NOT NULL," +
+                "	product_min_amount integer NOT NULL," +
                 "	product_name text NOT NULL," +
                 "	product_brand text NOT NULL," +
                 "	product_type text NOT NULL," +
@@ -248,98 +291,67 @@ public class App {
                 ");";
         try {
             Statement stmt = conn.createStatement();
-            stmt.executeUpdate(sql);
-        } catch (Exception err) {
-            System.out.println(err);
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            System.out.println("Erro ao criar a tabela: " + e.getMessage());
         }
     }
 
-    private void loadData() throws SQLException {
-        System.out.println("Load data");
+    private void loadData() {
         productlist = new ArrayList<>();
-        Statement stmt = conn.createStatement();
-        rs = stmt.executeQuery("select * from tbl_products");
-        productlist.clear();
-        while (rs.next()) {
-            productlist.add(new Product(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getString(7), rs.getString(8), rs.getDouble(9)));
-        }
-        dtm.setRowCount(0); // reset data model
-        for (int i = 0; i < productlist.size(); i++) {
-            Object[] objs = {
-                    productlist.get(i).id,
-                    productlist.get(i).name,
-                    productlist.get(i).brand,
-                    productlist.get(i).amount,
-                    productlist.get(i).type,
-                    productlist.get(i).size,
-                    productlist.get(i).color,
-                    productlist.get(i).description,
-                    productlist.get(i).price
-            };
-            dtm.addRow(objs);
-        }
-    }
+        dtm.setRowCount(0);
+        try {
+            Statement stmt = conn.createStatement();
+            rs = stmt.executeQuery("SELECT * FROM tbl_products");
+            productlist.clear();
+            while (rs.next()) {
+                productlist.add(new Product(
+                        rs.getInt("id"),
+                        rs.getInt("product_amount"),
+                        rs.getInt("product_min_amount"),
+                        rs.getString("product_name"),
+                        rs.getString("product_brand"),
+                        rs.getString("product_type"),
+                        rs.getString("product_size"),
+                        rs.getString("product_color"),
+                        rs.getString("product_desc"),
+                        rs.getDouble("product_price")
+                ));
+            }
 
-MouseInputAdapter mouseListener = new MouseInputAdapter() {
-    @Override
-    public void mouseClicked(java.awt.event.MouseEvent evt) {
-        int row = jt.rowAtPoint(evt.getPoint());
-        int col = jt.columnAtPoint(evt.getPoint());
-        if (row >= 0 && col >= 0) {
-            int id = Integer.parseInt(jt.getValueAt(row, 0).toString());
-            String name = jt.getValueAt(row, 1).toString();
-            String brand = jt.getValueAt(row, 2).toString();
-            String amount = jt.getValueAt(row, 3).toString();
-            String type = jt.getValueAt(row, 4).toString();
-            String size = jt.getValueAt(row, 5).toString();
-            String color = jt.getValueAt(row, 6).toString();
-            String desc = jt.getValueAt(row, 7).toString();
-            double price = Double.parseDouble(jt.getValueAt(row, 8).toString());
-
-            jtf_name.setText(name);
-            jtf_brand.setText(brand);
-            jtf_amount.setText(amount);
-            jtf_type.setText(type);
-            jtf_size.setText(size);
-            jtf_color.setText(color);
-            jta_desc.setText(desc);
-            jtf_price.setText(String.valueOf(price));
-
-            product = new Product(id, Integer.parseInt(amount), name, brand, type, size, color, desc, price);
+            for (Product product : productlist) {
+                Object[] objs = {product.id, product.name, product.brand, product.amount, product.minAmount, product.type, product.size, product.color, product.description, product.price};
+                dtm.addRow(objs);
+            }
+        } catch (SQLException e) {
+            System.out.println("Erro ao carregar dados: " + e.getMessage());
         }
     }
-};
 
-
-    ActionListener updateFoodListener = new ActionListener() {
+    ActionListener updateProductListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            String name = jtf_name.getText().trim();
-            String brand = jtf_brand.getText().trim();
-            String type = jtf_type.getText().trim();
-            String size = jtf_size.getText().trim();
-            String color = jtf_color.getText().trim();
-            String amount = jtf_amount.getText().trim();
-            String price = jtf_price.getText().trim();
-            String desc = jta_desc.getText().trim();
-        
             if (product == null) {
                 JOptionPane.showMessageDialog(frame, "Nenhum produto selecionado para atualizar.");
                 return;
             }
-        
-            int result = JOptionPane.showConfirmDialog(frame, "Atualizar " + product.name + "?", "Atualizar Produto",
-                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+            int result = JOptionPane.showConfirmDialog(frame, "Atualizar " + product.name + "?", "Atualizar Produto", JOptionPane.YES_NO_OPTION);
             if (result == JOptionPane.YES_OPTION) {
                 try {
-                    // Atualiza os dados do produto no banco de dados
                     Statement stmt = conn.createStatement();
-                    String sql = "UPDATE tbl_products SET product_name = '" + name + "', product_brand = '" + brand +
-                                 "', product_type = '" + type + "', product_size = '" + size + "', product_color = '" + color +
-                                 "', product_amount = " + amount + ", product_price = " + price + ", product_desc = '" + desc +
-                                 "' WHERE id = " + product.id;
+                    String sql = "UPDATE tbl_products SET product_name = '" + jtf_name.getText().trim() + "', " +
+                            "product_price = '" + jtf_price.getText().trim() + "', " +
+                            "product_desc = '" + jta_desc.getText().trim() + "', " +
+                            "product_brand = '" + jtf_brand.getText().trim() + "', " +
+                            "product_type = '" + jtf_type.getText().trim() + "', " +
+                            "product_size = '" + jtf_size.getText().trim() + "', " +
+                            "product_color = '" + jtf_color.getText().trim() + "', " +
+                            "product_amount = '" + jtf_amount.getText().trim() + "', " +
+                            "product_min_amount = '" + jtf_min_amount.getText().trim() + "' " +
+                            "WHERE id = " + product.id;
                     stmt.executeUpdate(sql);
-                    loadData(); // Recarrega os dados na tabela
+                    loadData();
                     JOptionPane.showMessageDialog(frame, "Produto atualizado com sucesso!");
                 } catch (SQLException ex) {
                     System.out.println("Erro ao atualizar produto: " + ex.getMessage());
@@ -347,93 +359,87 @@ MouseInputAdapter mouseListener = new MouseInputAdapter() {
                 }
             }
         }
-        
     };
 
-    ActionListener delFoodListener = new ActionListener() {
+    ActionListener delProductListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
             if (product == null) {
-                System.out.println("Null");
-            } else {
-                int result = JOptionPane.showConfirmDialog(frame, "Delete " + product.name + "?", "Swing Tester",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.QUESTION_MESSAGE);
-                if (result == JOptionPane.YES_OPTION) {
-                    try {
-                        System.out.println("Product " + product.name);
-                        Statement stmt = conn.createStatement();
-                        stmt.executeUpdate("DELETE FROM tbl_products WHERE id = " + product.id);
-                        loadData();
-                    } catch (Exception err) {
-                        System.out.println(err);
-                    }
+                JOptionPane.showMessageDialog(frame, "Nenhum produto selecionado para deletar.");
+                return;
+            }
+
+            int result = JOptionPane.showConfirmDialog(frame, "Deletar " + product.name + "?", "Deletar Produto", JOptionPane.YES_NO_OPTION);
+            if (result == JOptionPane.YES_OPTION) {
+                try {
+                    Statement stmt = conn.createStatement();
+                    stmt.executeUpdate("DELETE FROM tbl_products WHERE id = " + product.id);
+                    loadData();
+                } catch (SQLException ex) {
+                    System.out.println("Erro ao deletar produto: " + ex.getMessage());
+                    JOptionPane.showMessageDialog(frame, "Erro ao deletar produto: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
                 }
             }
         }
     };
-    
 
-    ActionListener searchFoodListener = new ActionListener() {
+    ActionListener searchProductListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            String search = JOptionPane.showInputDialog("Enter product name or details to search");
-            System.out.println(search);
-            
+            String search = JOptionPane.showInputDialog("Digite o nome ou detalhes do produto a ser buscado");
+
             productlist = new ArrayList<>();
             try {
                 Statement stmt = conn.createStatement();
                 String query = "SELECT * FROM tbl_products WHERE ";
-                String[] columns = {
-                    "product_amount",
-                    "product_name",
-                    "product_brand",
-                    "product_type",
-                    "product_size",
-                    "product_color",
-                    "product_desc",
-                    "product_price"
-                };
-                // Construindo a cláusula WHERE para pesquisar em todas as colunas, exceto product_id
+                String[] columns = {"product_amount", "product_min_amount", "product_name", "product_brand", "product_type", "product_size", "product_color", "product_desc", "product_price"};
                 for (int i = 0; i < columns.length; i++) {
-                    if (i > 0) {
-                        query += " OR ";
-                    }
+                    if (i > 0) query += " OR ";
                     query += columns[i] + " LIKE '%" + search + "%'";
                 }
                 rs = stmt.executeQuery(query);
                 productlist.clear();
                 while (rs.next()) {
-                    productlist.add(new Product(
-                        rs.getInt("id"),             // id
-                        rs.getInt("product_amount"), // amount
-                        rs.getString("product_name"),// name
-                        rs.getString("product_brand"),// brand
-                        rs.getString("product_type"), // type
-                        rs.getString("product_size"), // size
-                        rs.getString("product_color"),// color
-                        rs.getString("product_desc"), // description
-                        rs.getDouble("product_price") // price
-                    ));                    
+                    productlist.add(new Product(rs.getInt("id"), rs.getInt("product_amount"), rs.getInt("product_min_amount"), rs.getString("product_name"), rs.getString("product_brand"), rs.getString("product_type"), rs.getString("product_size"), rs.getString("product_color"), rs.getString("product_desc"), rs.getDouble("product_price")));
                 }
-                dtm.setRowCount(0); // reset data model
+                dtm.setRowCount(0);
                 for (Product product : productlist) {
-                    Object[] objs = {
-                        product.id,
-                        product.name,
-                        product.brand,
-                        product.amount,
-                        product.type,
-                        product.size,
-                        product.color,
-                        product.description,
-                        product.price
-                    };
+                    Object[] objs = {product.id, product.name, product.brand, product.amount, product.minAmount, product.type, product.size, product.color, product.description, product.price};
                     dtm.addRow(objs);
                 }
-            } catch (Exception err) {
-                System.out.println(err);
+            } catch (SQLException ex) {
+                System.out.println("Erro ao buscar produtos: " + ex.getMessage());
+                JOptionPane.showMessageDialog(frame, "Erro ao buscar produtos: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
         }
     };
-};
+
+    ActionListener checkQuantityListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            checkMinimumQuantity();
+        }
+    };
+    
+    MouseInputAdapter mouseListener = new MouseInputAdapter() {
+        @Override
+        public void mouseClicked(java.awt.event.MouseEvent evt) {
+            row = jt.rowAtPoint(evt.getPoint());
+            col = jt.columnAtPoint(evt.getPoint());
+
+            if (row >= 0 && col >= 0) {
+                product = productlist.get(row);
+                jtf_name.setText(product.name);
+                jtf_price.setText(String.valueOf(product.price));
+                jta_desc.setText(product.description);
+                jtf_brand.setText(product.brand);
+                jtf_type.setText(product.type);
+                jtf_size.setText(product.size);
+                jtf_color.setText(product.color);
+                jtf_amount.setText(String.valueOf(product.amount));
+                jtf_min_amount.setText(String.valueOf(product.minAmount));
+            }
+        }
+    };
+}
+
